@@ -93,10 +93,9 @@ def create_customer(auth_token, name, email):
     json_data = {
         'data': {
             'type': 'customer',
-            'name': name,
+            'name': str(name),
             'email': email,
-            'password': ''
-        },
+        }
     }
 
     response = requests.post('https://api.moltin.com/v2/customers', headers=headers, json=json_data)
