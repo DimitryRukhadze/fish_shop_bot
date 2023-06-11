@@ -95,6 +95,7 @@ def create_customer(auth_token, name, email):
             'type': 'customer',
             'name': name,
             'email': email,
+            'password': ''
         },
     }
 

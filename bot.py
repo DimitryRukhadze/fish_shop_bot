@@ -216,7 +216,6 @@ def handle_users_reply(bot, update, db_connect, products, moltin_token, cart_id)
         user_reply = 'WAITING_EMAIL'
         chat_id = update.callback_query.message.chat_id
     else:
-        print('this works')
         user_reply = update.callback_query.data
         chat_id = update.callback_query.message.chat_id
 
@@ -235,15 +234,12 @@ def handle_users_reply(bot, update, db_connect, products, moltin_token, cart_id)
     else:
         user_state = db_connect.get(chat_id).decode("utf-8")
 
-    print(user_state)
-
     state_handler = states_functions[user_state]
     # Если вы вдруг не заметите, что python-telegram-bot перехватывает ошибки.
     # Оставляю этот try...except, чтобы код не падал молча.
     # Этот фрагмент можно переписать.
     try:
         next_state = state_handler(bot, update)
-        print(f"next {next_state}")
         db_connect.set(chat_id, next_state)
     except Exception as err:
         print(err)
