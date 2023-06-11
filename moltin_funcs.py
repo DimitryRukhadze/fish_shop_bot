@@ -84,7 +84,7 @@ def get_product_image_url(token, product_id):
     return response.json()['data']['link']['href']
 
 
-def create_customer(auth_token):
+def create_customer(auth_token, name, email):
     headers = {
         'Authorization': f'Bearer {auth_token}',
         'Content-Type': 'application/json',
@@ -93,9 +93,8 @@ def create_customer(auth_token):
     json_data = {
         'data': {
             'type': 'customer',
-            'name': SAMPLE_CUSTOMER['name'],
-            'email': SAMPLE_CUSTOMER['email'],
-            'password': SAMPLE_CUSTOMER['password'],
+            'name': name,
+            'email': email,
         },
     }
 

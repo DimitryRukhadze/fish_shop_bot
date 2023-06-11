@@ -15,7 +15,8 @@ from moltin_funcs import (
     add_product_to_cart,
     get_cart_items,
     get_cart,
-    delete_item_from_cart
+    delete_item_from_cart,
+    create_customer
 )
 
 _database = None
@@ -40,77 +41,7 @@ def start(bot, update, products):
     return "HANDLE_DESCRIPTION"
 
 
-def handle_menu(bot, update, products):
-    user_chat_id = update.callback_query.from_user.id
-
-    keyboard = [
-        [
-            InlineKeyboardButton(f"{product['attributes']['name']}", callback_data=f"{product['id']}")
-            for product in products['data']
-        ],
-        [
-            InlineKeyboardButton('Корзина', callback_data='cart')
-        ]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    bot.send_message(chat_id=user_chat_id, text='Снова меню', reply_markup=reply_markup)
-    return "HANDLE_DESCRIPTION"
-
-
-def handle_description(bot, update, moltin_token, cart_id):
-    user_chat_id = update.callback_query.from_user.id
-
-    callback_split = update.callback_query.data.split()
-
-    product_id = callback_split[-1]
-
-    product = get_product_by_id(moltin_token, product_id)
-    product_inventory_full = get_product_inventory(moltin_token, product_id)
-    product_image_url = get_product_image_url(moltin_token, product_id)
-
-    product_available_inventory = product_inventory_full['data']['available']
-    product_name = product["data"]["attributes"]["name"]
-    product_description = product["data"]["attributes"]["description"]
-    product_price = product['data']['meta']['display_price']['without_tax']['formatted']
-
-    product_message = f'{product_name}\n{product_description}\navailable: {product_available_inventory}\nprice: {product_price}'
-    if 'pressed' in callback_split:
-        add_product_to_cart(moltin_token, cart_id, product_id, quantity=int(callback_split[1]))
-        keyboard = [
-            [
-                InlineKeyboardButton('1 кг', callback_data=update.callback_query.data),
-                InlineKeyboardButton('5 кг', callback_data=update.callback_query.data),
-                InlineKeyboardButton('10 кг', callback_data=update.callback_query.data)
-            ],
-            [
-                InlineKeyboardButton('Назад', callback_data='back'),
-                InlineKeyboardButton('Корзина', callback_data='cart')
-            ]
-        ]
-    else:
-        keyboard = [
-            [
-                InlineKeyboardButton('1 кг', callback_data=f'pressed 1 {update.callback_query.data}'),
-                InlineKeyboardButton('5 кг', callback_data=f'pressed 5 {update.callback_query.data}'),
-                InlineKeyboardButton('10 кг', callback_data=f'pressed 10 {update.callback_query.data}')
-            ],
-            [
-                InlineKeyboardButton('Назад', callback_data='back'),
-                InlineKeyboardButton('Корзина', callback_data='cart')
-            ]
-        ]
-
-    bot.delete_message(user_chat_id, update.callback_query.message.message_id)
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    bot.send_photo(user_chat_id, product_image_url, caption=product_message, reply_markup=reply_markup)
-
-    return 'HANDLE_DESCRIPTION'
-
-
 def handle_cart(bot, update, auth_token, cart_id):
-
     if update.callback_query.data != 'cart':
         delete_item_from_cart(auth_token, cart_id, update.callback_query.data)
 
@@ -151,11 +82,97 @@ def handle_cart(bot, update, auth_token, cart_id):
     return 'HANDLE_CART'
 
 
-def get_email(bot, update):
+def handle_menu(bot, update, products):
+    user_chat_id = update.callback_query.from_user.id
+
+    keyboard = [
+        [
+            InlineKeyboardButton(f"{product['attributes']['name']}", callback_data=f"{product['id']}")
+            for product in products['data']
+        ],
+        [
+            InlineKeyboardButton('Корзина', callback_data='cart')
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    bot.send_message(chat_id=user_chat_id, text='Снова меню', reply_markup=reply_markup)
+    return "HANDLE_DESCRIPTION"
+
+
+def handle_description(bot, update, moltin_token, cart_id):
+    user_chat_id = update.callback_query.from_user.id
+
+    callback_split = update.callback_query.data.split()
+
+    if 'back' in callback_split:
+        print('to menu')
+        return 'HANDLE_MENU'
+    elif 'cart' in callback_split:
+        return 'HANDLE_CART'
+
+    product_id = callback_split[-1]
+
+    product = get_product_by_id(moltin_token, product_id)
+    product_inventory_full = get_product_inventory(moltin_token, product_id)
+    product_image_url = get_product_image_url(moltin_token, product_id)
+
+    product_available_inventory = product_inventory_full['data']['available']
+    product_name = product["data"]["attributes"]["name"]
+    product_description = product["data"]["attributes"]["description"]
+    product_price = product['data']['meta']['display_price']['without_tax']['formatted']
+
+    product_message = f'{product_name}\n{product_description}\navailable: {product_available_inventory}\nprice: {product_price}'
+
+    if len(callback_split) > 1:
+        add_product_to_cart(moltin_token, cart_id, product_id, quantity=int(callback_split[0]))
+        keyboard = [
+            [
+                InlineKeyboardButton('1 кг', callback_data=update.callback_query.data),
+                InlineKeyboardButton('5 кг', callback_data=update.callback_query.data),
+                InlineKeyboardButton('10 кг', callback_data=update.callback_query.data)
+            ],
+            [
+                InlineKeyboardButton('Назад', callback_data='back'),
+                InlineKeyboardButton('Корзина', callback_data='cart')
+            ]
+        ]
+    else:
+        keyboard = [
+            [
+                InlineKeyboardButton('1 кг', callback_data=f'1 {update.callback_query.data}'),
+                InlineKeyboardButton('5 кг', callback_data=f'5 {update.callback_query.data}'),
+                InlineKeyboardButton('10 кг', callback_data=f'10 {update.callback_query.data}')
+            ],
+            [
+                InlineKeyboardButton('Назад', callback_data='back'),
+                InlineKeyboardButton('Корзина', callback_data='cart')
+            ]
+        ]
+
+    bot.delete_message(user_chat_id, update.callback_query.message.message_id)
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    bot.send_photo(user_chat_id, product_image_url, caption=product_message, reply_markup=reply_markup)
+
+    return 'HANDLE_DESCRIPTION'
+
+
+def get_email(bot, update, token):
+    if update.message:
+        email = update.message.text
+        chat_id = update.message.chat_id
+        customer = create_customer(token, chat_id, email)
+        print(customer)
+        keyboard = [
+            [
+                InlineKeyboardButton('Вернуться в меню', callback_data='back'),
+            ]
+        ]
+        bot.send_message(chat_id, text=f'Ваш email: {email}', reply_markup=InlineKeyboardMarkup(keyboard))
+        return 'HANDLE_MENU'
     user_id = update.callback_query.from_user.id
     bot.send_message(user_id, 'Пришлите ваш email')
-    email = update.message.text
-    print(email)
 
     return 'WAITING_EMAIL'
 
@@ -178,43 +195,47 @@ def handle_users_reply(bot, update, db_connect, products, moltin_token, cart_id)
     handle_description_with_token_cart = functools.partial(
         handle_description,
         moltin_token=moltin_token,
-        cart_id=cart_id
+        cart_id=cart_id,
     )
     handle_cart_with_token = functools.partial(
         handle_cart,
         auth_token=moltin_token,
         cart_id=cart_id
     )
+    get_email_with_token = functools.partial(get_email, token=moltin_token)
     if update.message:
         user_reply = update.message.text
         chat_id = update.message.chat_id
-    elif len(update.callback_query.data.split()) == 1:
+    elif update.callback_query.data == 'back':
+        user_reply = 'HANDLE_MENU'
+        chat_id = update.callback_query.message.chat_id
+    elif update.callback_query.data == 'cart':
+        user_reply = 'HANDLE_CART'
+        chat_id = update.callback_query.message.chat_id
+    elif update.callback_query.data == 'email':
+        user_reply = 'WAITING_EMAIL'
+        chat_id = update.callback_query.message.chat_id
+    else:
+        print('this works')
         user_reply = update.callback_query.data
         chat_id = update.callback_query.message.chat_id
-    elif len(update.callback_query.data.split()) > 1:
-        query_results = update.callback_query.data.split()
-        user_reply = query_results[2]
-        chat_id = update.callback_query.message.chat_id
-    else:
-        return
-    if user_reply == '/start':
-        user_state = 'START'
-    elif update.callback_query.data == 'back':
-        user_state = 'HANDLE_MENU'
-    elif update.callback_query.data == 'cart':
-        user_state = 'HANDLE_CART'
-    elif update.callback_query == 'email':
-        user_state = 'WAITING_EMAIL'
-    else:
-        user_state = db_connect.get(chat_id).decode("utf-8")
 
     states_functions = {
         'START': start_with_products,
         'HANDLE_MENU': handle_menu_with_products,
         'HANDLE_DESCRIPTION': handle_description_with_token_cart,
         'HANDLE_CART': handle_cart_with_token,
-        'WAITING_EMAIL': get_email
+        'WAITING_EMAIL': get_email_with_token
     }
+
+    if user_reply == '/start':
+        user_state = 'START'
+    elif user_reply in states_functions.keys():
+        user_state = user_reply
+    else:
+        user_state = db_connect.get(chat_id).decode("utf-8")
+
+    print(user_state)
 
     state_handler = states_functions[user_state]
     # Если вы вдруг не заметите, что python-telegram-bot перехватывает ошибки.
@@ -222,6 +243,7 @@ def handle_users_reply(bot, update, db_connect, products, moltin_token, cart_id)
     # Этот фрагмент можно переписать.
     try:
         next_state = state_handler(bot, update)
+        print(f"next {next_state}")
         db_connect.set(chat_id, next_state)
     except Exception as err:
         print(err)
