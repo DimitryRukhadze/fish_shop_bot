@@ -26,12 +26,7 @@ _database = None
 
 
 def start(bot, update, products):
-    """
-    Хэндлер для состояния START.
 
-    Бот отвечает пользователю фразой "Привет!" и переводит его в состояние ECHO.
-    Теперь в ответ на его команды будет запускаеться хэндлер echo.
-    """
     keyboard = [
         [
             InlineKeyboardButton(f"{product['attributes']['name']}", callback_data=f"{product['id']}")
@@ -58,7 +53,7 @@ def handle_cart(bot, update, auth_token, cart_id):
         ],
     ]
     if cart_items:
-        cart = get_cart(auth_token,cart_id)
+        cart = get_cart(auth_token, cart_id)
 
         products_in_cart = [
             '\n'.join([
@@ -99,7 +94,12 @@ def handle_menu(bot, update, products):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    bot.send_message(chat_id=user_chat_id, text='Снова меню', reply_markup=reply_markup)
+    bot.send_message(
+        chat_id=user_chat_id,
+        text='Снова меню',
+        reply_markup=reply_markup
+    )
+
     return "HANDLE_DESCRIPTION"
 
 
@@ -128,7 +128,13 @@ def handle_description(bot, update, moltin_token, cart_id):
     product_message = f'{product_name}\n{product_description}\navailable: {product_available_inventory}\nprice: {product_price}'
 
     if len(callback_split) > 1:
-        add_product_to_cart(moltin_token, cart_id, product_id, quantity=int(callback_split[0]))
+        add_product_to_cart(
+            moltin_token,
+            cart_id,
+            product_id,
+            quantity=int(callback_split[0])
+        )
+
         keyboard = [
             [
                 InlineKeyboardButton('1 кг', callback_data=update.callback_query.data),
@@ -156,7 +162,12 @@ def handle_description(bot, update, moltin_token, cart_id):
     bot.delete_message(user_chat_id, update.callback_query.message.message_id)
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    bot.send_photo(user_chat_id, product_image_url, caption=product_message, reply_markup=reply_markup)
+    bot.send_photo(
+        user_chat_id,
+        product_image_url,
+        caption=product_message,
+        reply_markup=reply_markup
+    )
 
     return 'HANDLE_DESCRIPTION'
 
@@ -167,7 +178,7 @@ def get_email(bot, update, token):
         chat_id = update.message.chat_id
         text = f'Ваш email: {email}'
         try:
-            customer = create_customer(token, chat_id, email)
+            create_customer(token, chat_id, email)
         except HTTPError as httperr:
             if '409' in httperr.args[0].split():
                 text = f'У нас есть ваш email: {email}. Спасибо, что вы с нами!'
@@ -178,7 +189,12 @@ def get_email(bot, update, token):
                 InlineKeyboardButton('Вернуться в меню', callback_data='back'),
             ]
         ]
-        bot.send_message(chat_id, text=text, reply_markup=InlineKeyboardMarkup(keyboard))
+        bot.send_message(
+            chat_id,
+            text=text,
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+
         return 'HANDLE_MENU'
     user_id = update.callback_query.from_user.id
     bot.send_message(user_id, 'Пришлите ваш email')
@@ -186,21 +202,23 @@ def get_email(bot, update, token):
     return 'WAITING_EMAIL'
 
 
-def handle_users_reply(bot, update, db_connect, products, moltin_token, cart_id):
-    """
-    Функция, которая запускается при любом сообщении от пользователя и решает как его обработать.
-    Эта функция запускается в ответ на эти действия пользователя:
-        * Нажатие на inline-кнопку в боте
-        * Отправка сообщения боту
-        * Отправка команды боту
-    Она получает стейт пользователя из базы данных и запускает соответствующую функцию-обработчик (хэндлер).
-    Функция-обработчик возвращает следующее состояние, которое записывается в базу данных.
-    Если пользователь только начал пользоваться ботом, Telegram форсит его написать "/start",
-    поэтому по этой фразе выставляется стартовое состояние.
-    Если пользователь захочет начать общение с ботом заново, он также может воспользоваться этой командой.
-    """
-    start_with_products = functools.partial(start, products=products)
-    handle_menu_with_products = functools.partial(handle_menu, products=products)
+def handle_users_reply(
+        bot,
+        update,
+        db_connect,
+        products,
+        moltin_token,
+        cart_id
+):
+
+    start_with_products = functools.partial(
+        start,
+        products=products
+    )
+    handle_menu_with_products = functools.partial(
+        handle_menu,
+        products=products
+    )
     handle_description_with_token_cart = functools.partial(
         handle_description,
         moltin_token=moltin_token,
@@ -255,9 +273,7 @@ def handle_users_reply(bot, update, db_connect, products, moltin_token, cart_id)
 
 
 def get_database_connection(host, password, port):
-    """
-    Возвращает конекшн с базой данных Redis, либо создаёт новый, если он ещё не создан.
-    """
+
     global _database
     if _database is None:
         database_password = password
@@ -282,8 +298,11 @@ if __name__ == '__main__':
     products = get_all_products(moltin_token)
     user_cart = create_cart(moltin_token)
 
-
-    db_connect = get_database_connection(redis_host, redis_password, redis_port)
+    db_connect = get_database_connection(
+        redis_host,
+        redis_password,
+        redis_port
+    )
 
     handle_users_reply_with_connections = functools.partial(
         handle_users_reply,
@@ -295,9 +314,15 @@ if __name__ == '__main__':
 
     updater = Updater(telega_token)
     dispatcher = updater.dispatcher
-    dispatcher.add_handler(CallbackQueryHandler(handle_users_reply_with_connections))
-    dispatcher.add_handler(MessageHandler(Filters.text, handle_users_reply_with_connections))
-    dispatcher.add_handler(CommandHandler('start', handle_users_reply_with_connections))
+    dispatcher.add_handler(
+        CallbackQueryHandler(handle_users_reply_with_connections)
+    )
+    dispatcher.add_handler(
+        MessageHandler(Filters.text, handle_users_reply_with_connections)
+    )
+    dispatcher.add_handler(
+        CommandHandler('start', handle_users_reply_with_connections)
+    )
 
     updater.start_polling()
     updater.idle()
