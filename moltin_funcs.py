@@ -1,13 +1,5 @@
 import requests
 
-from environs import Env
-
-
-SAMPLE_CUSTOMER = {
-    'name': 'R',
-    'email': 'ron@swanson.com',
-    'password': 'mysecretpassword'
-}
 
 def get_access_token(client_secret):
 
@@ -17,7 +9,10 @@ def get_access_token(client_secret):
         'grant_type': 'client_credentials',
     }
 
-    response = requests.post('https://api.moltin.com/oauth/access_token', data=data)
+    response = requests.post(
+        'https://api.moltin.com/oauth/access_token',
+        data=data
+    )
     response.raise_for_status()
 
     decoded_response = response.json()
@@ -32,7 +27,10 @@ def get_all_products(token):
         'Content-Type': 'application/json'
     }
 
-    response = requests.get('https://api.moltin.com/catalog/products', headers=headers)
+    response = requests.get(
+        'https://api.moltin.com/catalog/products',
+        headers=headers
+    )
     response.raise_for_status()
 
     return response.json()
@@ -57,9 +55,9 @@ def get_product_inventory(token, product_id):
         'Content-Type': 'application/json'
     }
 
-    product_inventory_url = f'https://api.moltin.com/v2/inventories/{product_id}'
+    product_inv_url = f'https://api.moltin.com/v2/inventories/{product_id}'
 
-    response = requests.get(product_inventory_url, headers=headers)
+    response = requests.get(product_inv_url, headers=headers)
     response.raise_for_status()
 
     return response.json()
@@ -71,8 +69,8 @@ def get_product_image_url(token, product_id):
         'Content-Type': 'application/json'
     }
 
-    product_image_info_url = f'https://api.moltin.com/pcm/products/{product_id}/relationships/main_image'
-    response = requests.get(product_image_info_url, headers=headers)
+    product_img_inf_url = f'https://api.moltin.com/pcm/products/{product_id}/relationships/main_image'
+    response = requests.get(product_img_inf_url, headers=headers)
     response.raise_for_status()
 
     image_id = response.json()['data']['id']
@@ -99,7 +97,11 @@ def create_customer(auth_token, name, email):
         }
     }
 
-    response = requests.post('https://api.moltin.com/v2/customers', headers=headers, json=json_data)
+    response = requests.post(
+        'https://api.moltin.com/v2/customers',
+        headers=headers,
+        json=json_data
+    )
     response.raise_for_status()
 
     return response.json()
@@ -115,7 +117,11 @@ def get_customer_by_name(name, auth_token):
         'filter': f'eq(name,{name})',
     }
 
-    response = requests.get('https://api.moltin.com/v2/customers', headers=headers, params=params)
+    response = requests.get(
+        'https://api.moltin.com/v2/customers',
+        headers=headers,
+        params=params
+    )
     response.raise_for_status()
 
     return response.json()
@@ -128,12 +134,16 @@ def create_cart(auth_token):
     }
 
     data = {
-        'data':{
-            'name':'new_cart'
+        'data': {
+            'name': 'new_cart'
         }
     }
 
-    response = requests.post('https://api.moltin.com/v2/carts', headers=headers, json=data)
+    response = requests.post(
+        'https://api.moltin.com/v2/carts',
+        headers=headers,
+        json=data
+    )
     response.raise_for_status()
 
     return response.json()
@@ -146,7 +156,10 @@ def get_cart_items(auth_token, cart_id):
         'Content-Type': 'application/json',
     }
 
-    response = requests.get(f'https://api.moltin.com/v2/carts/{cart_id}/items', headers=headers)
+    response = requests.get(
+        f'https://api.moltin.com/v2/carts/{cart_id}/items',
+        headers=headers
+    )
     response.raise_for_status()
 
     return response.json()
@@ -158,10 +171,14 @@ def get_cart(auth_token, cart_id):
         'Content-Type': 'application/json',
     }
 
-    response = requests.get(f'https://api.moltin.com/v2/carts/{cart_id}', headers=headers)
+    response = requests.get(
+        f'https://api.moltin.com/v2/carts/{cart_id}',
+        headers=headers
+    )
     response.raise_for_status()
 
     return response.json()
+
 
 def add_product_to_cart(auth_token, cart_id, product_id, quantity=1):
     cart_url = f'https://api.moltin.com/v2/carts/{cart_id}/items'
@@ -173,9 +190,9 @@ def add_product_to_cart(auth_token, cart_id, product_id, quantity=1):
     }
 
     data = {
-        'data':{
+        'data': {
             'quantity': quantity,
-            'type':'cart_item',
+            'type': 'cart_item',
             'id': product_id
         }
     }
@@ -185,6 +202,7 @@ def add_product_to_cart(auth_token, cart_id, product_id, quantity=1):
 
 
 def delete_item_from_cart(auth_token, cart_id, product_id):
+
     del_item_url = f'https://api.moltin.com/v2/carts/{cart_id}/items/{product_id}'
 
     headers = {
@@ -194,28 +212,3 @@ def delete_item_from_cart(auth_token, cart_id, product_id):
 
     resp = requests.delete(del_item_url, headers=headers)
     resp.raise_for_status()
-
-
-if __name__ == '__main__':
-
-    env = Env()
-    env.read_env()
-    secret_key = env('MOLTIN_SECRET_KEY')
-    access_token = get_access_token(secret_key)
-
-    all_products = get_all_products(access_token)
-    all_products_ids = [
-        product['id']
-        for product in all_products['data']
-        ]
-
-    cart = create_cart(access_token)
-    cart_id = cart['data']['id']
-    print(cart)
-    add_product_to_cart(access_token, cart_id, all_products_ids[0])
-    headers = {
-        'Authorization': f'Bearer {access_token}',
-        'Content-Type': 'application/json',
-    }
-    resp = requests.get(f'https://api.moltin.com/v2/carts/{cart_id}/items', headers=headers)
-    print(f'final cart{resp.json()}')
