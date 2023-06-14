@@ -78,6 +78,7 @@ def get_product_image_url(token, product_id):
     image_id = response.json()['data']['id']
 
     image_data_url = f'https://api.moltin.com/v2/files/{image_id}'
+
     response = requests.get(image_data_url, headers=headers)
     response.raise_for_status()
 

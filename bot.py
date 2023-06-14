@@ -1,6 +1,9 @@
 import redis
 import functools
 
+
+from requests.exceptions import HTTPError
+
 from environs import Env
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Filters, Updater
@@ -162,14 +165,20 @@ def get_email(bot, update, token):
     if update.message:
         email = update.message.text
         chat_id = update.message.chat_id
-        customer = create_customer(token, chat_id, email)
-        print(customer)
+        text = f'Ваш email: {email}'
+        try:
+            customer = create_customer(token, chat_id, email)
+        except HTTPError as httperr:
+            if '409' in httperr.args[0].split():
+                text = f'У нас есть ваш email: {email}. Спасибо, что вы с нами!'
+            elif '422' in httperr.args[0].split():
+                text = f'Неверный email: {email}'
         keyboard = [
             [
                 InlineKeyboardButton('Вернуться в меню', callback_data='back'),
             ]
         ]
-        bot.send_message(chat_id, text=f'Ваш email: {email}', reply_markup=InlineKeyboardMarkup(keyboard))
+        bot.send_message(chat_id, text=text, reply_markup=InlineKeyboardMarkup(keyboard))
         return 'HANDLE_MENU'
     user_id = update.callback_query.from_user.id
     bot.send_message(user_id, 'Пришлите ваш email')
