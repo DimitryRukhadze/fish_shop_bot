@@ -48,8 +48,8 @@ def handle_cart(bot, update, auth_token, cart_id):
     cart_message = 'No items in cart yet'
     keyboard = [
         [
-            InlineKeyboardButton('В меню', callback_data='back'),
-            InlineKeyboardButton('Оплатить', callback_data='email')
+            InlineKeyboardButton('В меню', callback_data='HANDLE_MENU'),
+            InlineKeyboardButton('Оплатить', callback_data='WAITING_EMAIL')
         ],
     ]
     if cart_items:
@@ -109,7 +109,6 @@ def handle_description(bot, update, moltin_token, cart_id):
     callback_split = update.callback_query.data.split()
 
     if 'back' in callback_split:
-        print('to menu')
         return 'HANDLE_MENU'
     elif 'cart' in callback_split:
         return 'HANDLE_CART'
@@ -142,8 +141,8 @@ def handle_description(bot, update, moltin_token, cart_id):
                 InlineKeyboardButton('10 кг', callback_data=update.callback_query.data)
             ],
             [
-                InlineKeyboardButton('Назад', callback_data='back'),
-                InlineKeyboardButton('Корзина', callback_data='cart')
+                InlineKeyboardButton('Назад', callback_data='HANDLE_MENU'),
+                InlineKeyboardButton('Корзина', callback_data='HANDLE_CART')
             ]
         ]
     else:
@@ -154,12 +153,11 @@ def handle_description(bot, update, moltin_token, cart_id):
                 InlineKeyboardButton('10 кг', callback_data=f'10 {update.callback_query.data}')
             ],
             [
-                InlineKeyboardButton('Назад', callback_data='back'),
-                InlineKeyboardButton('Корзина', callback_data='cart')
+                InlineKeyboardButton('Назад', callback_data='HANDLE_MENU'),
+                InlineKeyboardButton('Корзина', callback_data='HANDLE_CART')
             ]
         ]
 
-    bot.delete_message(user_chat_id, update.callback_query.message.message_id)
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     bot.send_photo(
@@ -168,6 +166,7 @@ def handle_description(bot, update, moltin_token, cart_id):
         caption=product_message,
         reply_markup=reply_markup
     )
+    bot.delete_message(user_chat_id, update.callback_query.message.message_id)
 
     return 'HANDLE_DESCRIPTION'
 
@@ -230,18 +229,10 @@ def handle_users_reply(
         cart_id=cart_id
     )
     get_email_with_token = functools.partial(get_email, token=moltin_token)
+
     if update.message:
         user_reply = update.message.text
         chat_id = update.message.chat_id
-    elif update.callback_query.data == 'back':
-        user_reply = 'HANDLE_MENU'
-        chat_id = update.callback_query.message.chat_id
-    elif update.callback_query.data == 'cart':
-        user_reply = 'HANDLE_CART'
-        chat_id = update.callback_query.message.chat_id
-    elif update.callback_query.data == 'email':
-        user_reply = 'WAITING_EMAIL'
-        chat_id = update.callback_query.message.chat_id
     else:
         user_reply = update.callback_query.data
         chat_id = update.callback_query.message.chat_id
