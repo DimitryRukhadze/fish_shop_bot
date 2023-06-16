@@ -15,9 +15,9 @@ def get_access_token(client_secret):
     )
     response.raise_for_status()
 
-    decoded_response = response.json()
+    response_from_json = response.json()
 
-    return decoded_response['access_token']
+    return response_from_json['access_token']
 
 
 def get_all_products(token):
