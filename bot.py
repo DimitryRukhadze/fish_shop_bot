@@ -294,7 +294,10 @@ if __name__ == '__main__':
     redis_host = env("REDIS_HOST")
     redis_password = env("REDIS_PASSWORD")
     redis_port = env("REDIS_PORT")
-    moltin_token = get_access_token(env('MOLTIN_SECRET_KEY'))
+    moltin_token = get_access_token(
+        env('MOLTIN_CLIENT_ID'),
+        env('MOLTIN_SECRET_KEY')
+    )
     products = get_all_products(moltin_token)
     user_cart = create_cart(moltin_token)
 

@@ -1,10 +1,10 @@
 import requests
 
 
-def get_access_token(client_secret):
+def get_access_token(client_id, client_secret):
 
     data = {
-        'client_id': 'XMUVQxGxai0NA7pfgiejMGVdq6EZ6bnsAKS45zRDg0',
+        'client_id': client_id,
         'client_secret': client_secret,
         'grant_type': 'client_credentials',
     }
