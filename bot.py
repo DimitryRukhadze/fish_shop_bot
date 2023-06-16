@@ -8,7 +8,7 @@ from environs import Env
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Filters, Updater
 from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler
-from moltin_funcs import (
+from moltin import (
     get_access_token,
     get_all_products,
     get_product_by_id,
