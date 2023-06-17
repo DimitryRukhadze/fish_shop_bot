@@ -9,7 +9,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Filters, Updater
 from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler
 from moltin import (
-    get_access_token,
+    MoltinToken,
     get_all_products,
     get_product_by_id,
     get_product_inventory,
@@ -108,9 +108,9 @@ def handle_description(bot, update, moltin_token, cart_id):
 
     callback_split = update.callback_query.data.split()
 
-    if 'back' in callback_split:
+    if 'HANDLE_MENU' in callback_split:
         return 'HANDLE_MENU'
-    elif 'cart' in callback_split:
+    elif 'HANDLE_CART' in callback_split:
         return 'HANDLE_CART'
 
     product_id = callback_split[-1]
@@ -206,9 +206,10 @@ def handle_users_reply(
         update,
         db_connect,
         products,
-        moltin_token,
+        token_obj,
         cart_id
 ):
+    actual_token = token_obj.check_and_renew()
 
     start_with_products = functools.partial(
         start,
@@ -220,15 +221,15 @@ def handle_users_reply(
     )
     handle_description_with_token_cart = functools.partial(
         handle_description,
-        moltin_token=moltin_token,
+        moltin_token=actual_token,
         cart_id=cart_id,
     )
     handle_cart_with_token = functools.partial(
         handle_cart,
-        auth_token=moltin_token,
+        auth_token=actual_token,
         cart_id=cart_id
     )
-    get_email_with_token = functools.partial(get_email, token=moltin_token)
+    get_email_with_token = functools.partial(get_email, token=actual_token)
 
     if update.message:
         user_reply = update.message.text
@@ -278,19 +279,24 @@ def get_database_connection(host, password, port):
     return _database
 
 
-if __name__ == '__main__':
+def main():
+
     env = Env()
     env.read_env()
+
+    token_obj = MoltinToken(
+        env('MOLTIN_CLIENT_ID'),
+        env('MOLTIN_SECRET_KEY')
+    )
+    token_obj.get_token()
+
     telega_token = env("TELEGRAM_TOKEN")
     redis_host = env("REDIS_HOST")
     redis_password = env("REDIS_PASSWORD")
     redis_port = env("REDIS_PORT")
-    moltin_token = get_access_token(
-        env('MOLTIN_CLIENT_ID'),
-        env('MOLTIN_SECRET_KEY')
-    )
-    products = get_all_products(moltin_token)
-    user_cart = create_cart(moltin_token)
+
+    products = get_all_products(token_obj.token)
+    user_cart = create_cart(token_obj.token)
 
     db_connect = get_database_connection(
         redis_host,
@@ -302,7 +308,7 @@ if __name__ == '__main__':
         handle_users_reply,
         db_connect=db_connect,
         products=products,
-        moltin_token=moltin_token,
+        token_obj=token_obj,
         cart_id=user_cart['data']['id']
     )
 
@@ -320,3 +326,7 @@ if __name__ == '__main__':
 
     updater.start_polling()
     updater.idle()
+
+
+if __name__ == '__main__':
+    main()

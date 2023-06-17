@@ -1,23 +1,45 @@
 import requests
 
+from datetime import datetime
 
-def get_access_token(client_id, client_secret):
 
-    data = {
-        'client_id': client_id,
-        'client_secret': client_secret,
-        'grant_type': 'client_credentials',
-    }
+class MoltinToken:
 
-    response = requests.post(
-        'https://api.moltin.com/oauth/access_token',
-        data=data
-    )
-    response.raise_for_status()
+    def __init__(self, client_id, client_secret):
+        self.client_id = client_id
+        self.client_secret = client_secret
 
-    response_from_json = response.json()
 
-    return response_from_json['access_token']
+    def get_token(self):
+        data = {
+            'client_id': self.client_id,
+            'client_secret': self.client_secret,
+            'grant_type': 'client_credentials',
+        }
+
+        response = requests.post(
+            'https://api.moltin.com/oauth/access_token',
+            data=data
+        )
+        response.raise_for_status()
+
+        self.token_response = response.json()
+        self.token = self.token_response['access_token']
+
+        return self.token_response['access_token']
+
+
+    def check_and_renew(self):
+        curr_timestamp = int(datetime.timestamp(datetime.now()))
+        expires = self.token_response['expires']
+        curr_timedate = datetime.fromtimestamp(curr_timestamp)
+        expires_timedate = datetime.fromtimestamp(expires)
+        delta = (expires_timedate - curr_timedate)
+
+        if delta.total_seconds() < 100:
+            return self.get_token()
+
+        return self.token
 
 
 def get_all_products(token):
