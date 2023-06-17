@@ -40,7 +40,7 @@ def start(bot, update, products):
 
 
 def handle_cart(bot, update, auth_token, cart_id):
-    if update.callback_query.data != 'cart':
+    if update.callback_query.data != 'HANDLE_CART':
         delete_item_from_cart(auth_token, cart_id, update.callback_query.data)
 
     user_chat_id = update.callback_query.from_user.id
@@ -89,7 +89,7 @@ def handle_menu(bot, update, products):
             for product in products['data']
         ],
         [
-            InlineKeyboardButton('Корзина', callback_data='cart')
+            InlineKeyboardButton('Корзина', callback_data='HANDLE_CART')
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
