@@ -30,13 +30,13 @@ REDIS_PASSWORD=ваш пароль redis
 REDIS_USERNAME=default
 ```
 
-##Описание модулей и запуск
+## Описание модулей и запуск
 
-###moltin_funcs.py
+### moltin_funcs.py
 
 Этот модуль содержит функции для работы с API elasticpath
 
-###bot.py
+### bot.py
 
 Это основной модуль приложения. Чтобы бот заработал локально, запустите его коммандой `python bot.py`
 
