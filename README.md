@@ -22,6 +22,7 @@ pip install -r requirements.txt
 
 ```dotenv
 MOLTIN_SECRET_KEY=ваш ключ от магазина
+MOLTIN_CLIENT_ID=ваш id в elasticpath
 TELEGRAM_TOKEN=токен бота
 REDIS_HOST=хост вашей бд
 REDIS_PORT=порт вашей бд
