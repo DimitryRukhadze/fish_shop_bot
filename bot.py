@@ -288,7 +288,6 @@ def main():
         env('MOLTIN_CLIENT_ID'),
         env('MOLTIN_SECRET_KEY')
     )
-    token_obj.get_token()
 
     telega_token = env("TELEGRAM_TOKEN")
     redis_host = env("REDIS_HOST")
