@@ -282,7 +282,7 @@ def main():
 
     env = Env()
     env.read_env()
-    
+
     moltin_token_obj = MoltinToken(
         env('MOLTIN_CLIENT_ID'),
         env('MOLTIN_SECRET_KEY')
@@ -294,7 +294,6 @@ def main():
     redis_port = env("REDIS_PORT")
 
     products = get_all_products(moltin_token_obj.token)
-    #user_cart = create_cart(moltin_token_obj.token)
 
     db_connect = get_database_connection(
         redis_host,
