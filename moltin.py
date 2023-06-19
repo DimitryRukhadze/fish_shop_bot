@@ -150,7 +150,7 @@ def get_customer_by_name(name, auth_token):
     return response.json()
 
 
-def create_cart(auth_token):
+def create_cart(auth_token, cart_id):
     headers = {
         'Authorization': f'Bearer {auth_token}',
         'Content-Type': 'application/json',
@@ -158,7 +158,8 @@ def create_cart(auth_token):
 
     data = {
         'data': {
-            'name': 'new_cart'
+            'name': 'new_cart',
+            'id': cart_id
         }
     }
 

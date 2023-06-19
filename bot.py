@@ -39,12 +39,13 @@ def start(bot, update, products):
     return "HANDLE_DESCRIPTION"
 
 
-def handle_cart(bot, update, auth_token, cart_id):
-    if update.callback_query.data != 'HANDLE_CART':
-        delete_item_from_cart(auth_token, cart_id, update.callback_query.data)
-
+def handle_cart(bot, update, auth_token):
     user_chat_id = update.callback_query.from_user.id
-    cart_items = get_cart_items(auth_token, cart_id)['data']
+
+    if update.callback_query.data != 'HANDLE_CART':
+        delete_item_from_cart(auth_token, user_chat_id, update.callback_query.data)
+
+    cart_items = get_cart_items(auth_token, user_chat_id)['data']
     cart_message = 'No items in cart yet'
     keyboard = [
         [
@@ -53,7 +54,7 @@ def handle_cart(bot, update, auth_token, cart_id):
         ],
     ]
     if cart_items:
-        cart = get_cart(auth_token, cart_id)
+        cart = get_cart(auth_token, user_chat_id)
 
         products_in_cart = [
             '\n'.join([
@@ -103,9 +104,8 @@ def handle_menu(bot, update, products):
     return "HANDLE_DESCRIPTION"
 
 
-def handle_description(bot, update, moltin_token, cart_id):
+def handle_description(bot, update, moltin_token):
     user_chat_id = update.callback_query.from_user.id
-
     callback_split = update.callback_query.data.split()
 
     if 'HANDLE_MENU' in callback_split:
@@ -129,7 +129,7 @@ def handle_description(bot, update, moltin_token, cart_id):
     if len(callback_split) > 1:
         add_product_to_cart(
             moltin_token,
-            cart_id,
+            user_chat_id,
             product_id,
             quantity=int(callback_split[0])
         )
@@ -207,9 +207,17 @@ def handle_users_reply(
         db_connect,
         products,
         token_obj,
-        cart_id
 ):
     actual_token = token_obj.check_and_renew()
+
+    if update.message:
+        user_reply = update.message.text
+        chat_id = update.message.chat_id
+    else:
+        user_reply = update.callback_query.data
+        chat_id = update.callback_query.message.chat_id
+
+    get_cart(actual_token, chat_id)
 
     start_with_products = functools.partial(
         start,
@@ -219,29 +227,20 @@ def handle_users_reply(
         handle_menu,
         products=products
     )
-    handle_description_with_token_cart = functools.partial(
+    handle_description_with_token = functools.partial(
         handle_description,
         moltin_token=actual_token,
-        cart_id=cart_id,
     )
     handle_cart_with_token = functools.partial(
         handle_cart,
         auth_token=actual_token,
-        cart_id=cart_id
     )
     get_email_with_token = functools.partial(get_email, token=actual_token)
-
-    if update.message:
-        user_reply = update.message.text
-        chat_id = update.message.chat_id
-    else:
-        user_reply = update.callback_query.data
-        chat_id = update.callback_query.message.chat_id
 
     states_functions = {
         'START': start_with_products,
         'HANDLE_MENU': handle_menu_with_products,
-        'HANDLE_DESCRIPTION': handle_description_with_token_cart,
+        'HANDLE_DESCRIPTION': handle_description_with_token,
         'HANDLE_CART': handle_cart_with_token,
         'WAITING_EMAIL': get_email_with_token
     }
@@ -283,8 +282,8 @@ def main():
 
     env = Env()
     env.read_env()
-
-    token_obj = MoltinToken(
+    print('locally')
+    moltin_token_obj = MoltinToken(
         env('MOLTIN_CLIENT_ID'),
         env('MOLTIN_SECRET_KEY')
     )
@@ -294,8 +293,8 @@ def main():
     redis_password = env("REDIS_PASSWORD")
     redis_port = env("REDIS_PORT")
 
-    products = get_all_products(token_obj.token)
-    user_cart = create_cart(token_obj.token)
+    products = get_all_products(moltin_token_obj.token)
+    #user_cart = create_cart(moltin_token_obj.token)
 
     db_connect = get_database_connection(
         redis_host,
@@ -307,8 +306,7 @@ def main():
         handle_users_reply,
         db_connect=db_connect,
         products=products,
-        token_obj=token_obj,
-        cart_id=user_cart['data']['id']
+        token_obj=moltin_token_obj,
     )
 
     updater = Updater(telega_token)
