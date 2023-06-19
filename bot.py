@@ -282,7 +282,7 @@ def main():
 
     env = Env()
     env.read_env()
-    print('locally')
+    
     moltin_token_obj = MoltinToken(
         env('MOLTIN_CLIENT_ID'),
         env('MOLTIN_SECRET_KEY')
