@@ -217,8 +217,6 @@ def handle_users_reply(
         user_reply = update.callback_query.data
         chat_id = update.callback_query.message.chat_id
 
-    get_cart(actual_token, chat_id)
-
     start_with_products = functools.partial(
         start,
         products=products
